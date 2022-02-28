@@ -4,40 +4,38 @@ author: "Jeev Prayaga"
 date: "Block 4"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: rows
-    vertical_layout: scroll
-    # storyboard: true
+    storyboard: true
     css: styles.scss
 ---
 
 ```{r setup, include=FALSE}
 library(tidyverse)
-library(plotly)
 library(flexdashboard)
 library(spotifyr)
 library(ggthemes)
+library(plotly)
+library(compmus)
 
 corpus <- get_playlist_audio_features("", "14Bfxipb26yzTFoxmDfjeg?si=ff7f24e465794647")
 ```
 
-Sidebar {.sidebar}
--------------------------------------
+### Introduction
 
-<div class="jump-links">
-  <ul>
-    <li><a href="#"></a>jump_to</li>
-    <li><a href="#"></a>jump_to</li>
-    <li><a href="#"></a>jump_to</li>
-    <li><a href="#"></a>jump_to</li>
-    <li><a href="#"></a>jump_to</li>
-  </ul>
-  <a>
-</div>
+A few years ago, I decided to create a new Spotify playlist each month in order to capture my favorite music at various points in time. To keep each playlist consistent, I gave myself the following three conditions:
+1. the playlist would contain exactly 11 songs
+2. no two songs in the playlist could have the same artist
+3. every song in the playlist had to be a song I had listened to during the given calendar month
 
-Column {data-width=650}
------------------------------------------------------------------------
+Between March 2018 and January 2022, I ended up creating 41 monthly playlists, which I have now combined into a single 451-song playlist.
 
-### Chart A
+**I think this playlist could serve as a corpus for my portfolio project because it represents the diversity of my music preferences, reflects month-by-month changes in how I listen to music, and reveals long-term trends for how my taste in music may have changed over a period of four years.**
+
+I think the variable of time can be used to create and compare groups of songs. For example, I can compare the valence of songs I added before the COVID-19 pandemic to those I added during lockdown. I can also investigate how different seasons might affect my listening history -- do I listen to more upbeat music in warmer months, or during the winter in an attempt to boost my mood? How has my appreciation for certain artists and genres changed month-by-month and year-by-year?
+
+Since I almost exclusively listen to music on Spotify, I believe this corpus is highly representative of my personal listening habits. I also think the variation in songs will allow me to analyze certain tracks in greater detail. Songs like "2021" by A.G. Cook (a short, digitally-produced electronic track) will contrast greatly with "Obi Agye Me Dofo" by Vis à Vis (a 10-minute Afrobeat track recorded live in the 1970s). These songs fall on different sides of the spectrum in terms of length, genre, and "acousticness," making them good candidates for investigation.
+
+
+### How are valence, energy, loudness, and acousticness related?
 
 ```{r}
 
@@ -59,7 +57,7 @@ p <- ggplot(
     y = valence,
     alpha = loudness,
     size = acousticness,
-    name= track.name,
+    name = track.name,
     text = paste(
       "Track: ", track.name,
       "<br>Valence: ", valence,
@@ -68,16 +66,17 @@ p <- ggplot(
       "<br>Acousticness: ", acousticness
     ))
   ) +
-  geom_point(color = "#15a353") + 
-  scale_size(trans = 'reverse') +
+  geom_point(color = "#15a353") +
+  scale_size(trans = "reverse") +
   labs(
-    title = "Valence, energy, loudness, and acousticness by track", 
-    x = "Track energy", 
-    y = "Track valence", 
-    size = "Track acousticness", 
+    title = "Valence, energy, loudness, and acousticness by track",
+    x = "Track energy",
+    y = "Track valence",
+    size = "Track acousticness",
     alpha = "Track loudness"
   ) +
   theme_few()
+
 
 fig <- ggplotly(p, tooltip = "text") %>%
   style(hoverlabel = label) %>%
@@ -87,18 +86,53 @@ fig
 
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
+*** 
 
-### Chart B
+This scatterplot maps valence, energy, loudness, and acousticness for every track in the corpus. Using valence and energy on the x- and y-axis respectively, we can see an upward trend showing that higher energy tracks have a higher valence, meaning they are sound more positive to the listener. Using transparency as a fourth variable, we can see that higher energy/valence tracks are also louder, since the darkest points are in the top right quadrant of the plot. Finally, since size represents acousticness on this plot, it is clear that highly acoustic tracks have low valence and energy, since there are very few large points in the top right quadrant.
 
-```{r}
-
-```
-
-### Chart C
+### How closely do cover songs in different languages align?
 
 ```{r}
 
+hier_encore_track <- "4ciRwt5dGHKKm8Et8r1xJ0"
+yesterday_track <- "7nSjdcQueimUqsDsBq7orE"
+
+hier_encore <-
+  get_tidy_audio_analysis(hier_encore_track) %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+yesterday <-
+  get_tidy_audio_analysis(yesterday_track) %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+
+compmus_long_distance(
+  yesterday %>% mutate(pitches = map(pitches, compmus_normalise, "chebyshev")),
+  hier_encore %>% mutate(pitches = map(pitches, compmus_normalise, "chebyshev")),
+  feature = pitches,
+  method = "euclidean"
+) %>%
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_equal() +
+  labs(title = "Dynamic Time Warping", x = "Yesterday When I Was Young", y = "Hier Encore") +
+  scale_fill_viridis_c(guide = NULL)
+
 ```
+
+*** 
+
+This plot represents a dynamic time warping between two versions of the famous French chanson "Hier encore." The original version was released in 1964 by Charles Azvanour. Five years later, the American country singer Roy Clark recorded an English version of the song, titled "Yesterday When I Was Young." Since these songs have different lyrics (sung in different languages) and employ different instrumentation, I wanted to investigate how musically similar the two songs really are. This plot shows the chroma features of each song, and similarity is shown by the several faint diagonal lines throughout the song. Although it is clear that the songs are not exactly the same (which would be shown by much clearer diagonal lines that have a slope of 1), we can see some similarities where chords are most likely aligning. Conversely, the parts of the plot where the lines become fragmented or broken probably represent parts of the songs where the chords does not align.
 

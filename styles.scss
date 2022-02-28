@@ -1,52 +1,14 @@
 body,
 html,
-*,
-*::before,
-*::after,
 h1,
 h2,
 h3,
 h4,
-h5 {
+h5,
+p {
   font-family: 'Public Sans', sans-serif;
 }
 
 body {
   background: #fefff8;
-}
-
-p {
-  font-family: 'Newsreader', sans-serif;
-}
-
-.dashboard-page-wrapper {
-  width: 70%;
-  max-width: 1000px;
-  margin: auto;
-}
-
-.navbar {
-  background-color: #121212;
-  border: none;
-}
-
-.section.sidebar {
-  background: none;
-}
-
-.section.sidebar .jump-links {
-  margin-top: 10%;
-}
-
-.jump-links > ul {
-  padding: 0;
-  margin: 0;
-}
-
-.jump-links > ul > li {
-  list-style: none;
-}
-
-.jump-links > ul > li > a {
-  cursor: pointer;
 }
