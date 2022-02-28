@@ -12,8 +12,12 @@ output:
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(plotly)
 library(flexdashboard)
 library(spotifyr)
+library(ggthemes)
+
+corpus <- get_playlist_audio_features("", "14Bfxipb26yzTFoxmDfjeg?si=ff7f24e465794647")
 ```
 
 Sidebar {.sidebar}
@@ -36,6 +40,50 @@ Column {data-width=650}
 ### Chart A
 
 ```{r}
+
+font <- list(
+  family = "Public Sans",
+  size = 12,
+  color = "white"
+)
+label <- list(
+  bgcolor = "#232F34",
+  bordercolor = "transparent",
+  font = font
+)
+
+p <- ggplot(
+  corpus,
+  aes(
+    x = energy,
+    y = valence,
+    alpha = loudness,
+    size = acousticness,
+    name= track.name,
+    text = paste(
+      "Track: ", track.name,
+      "<br>Valence: ", valence,
+      "<br>Energy: ", energy,
+      "<br>Loudness: ", loudness,
+      "<br>Acousticness: ", acousticness
+    ))
+  ) +
+  geom_point(color = "#15a353") + 
+  scale_size(trans = 'reverse') +
+  labs(
+    title = "Valence, energy, loudness, and acousticness by track", 
+    x = "Track energy", 
+    y = "Track valence", 
+    size = "Track acousticness", 
+    alpha = "Track loudness"
+  ) +
+  theme_few()
+
+fig <- ggplotly(p, tooltip = "text") %>%
+  style(hoverlabel = label) %>%
+  layout(font = font)
+
+fig
 
 ```
 
