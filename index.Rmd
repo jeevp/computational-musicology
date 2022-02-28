@@ -1,0 +1,56 @@
+---
+title: "Computational Musicology Portfolio"
+author: "Jeev Prayaga"
+date: "Block 4"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    # storyboard: true
+    css: styles.scss
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(flexdashboard)
+library(spotifyr)
+```
+
+Sidebar {.sidebar}
+-------------------------------------
+
+<div class="jump-links">
+  <ul>
+    <li><a href="#"></a>jump_to</li>
+    <li><a href="#"></a>jump_to</li>
+    <li><a href="#"></a>jump_to</li>
+    <li><a href="#"></a>jump_to</li>
+    <li><a href="#"></a>jump_to</li>
+  </ul>
+  <a>
+</div>
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+
