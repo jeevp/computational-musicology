@@ -6,6 +6,7 @@ output:
   flexdashboard::flex_dashboard:
     storyboard: true
     css: styles.scss
+    theme: bootstrap
 ---
 
 ```{r setup, include=FALSE}
@@ -15,8 +16,150 @@ library(spotifyr)
 library(ggthemes)
 library(plotly)
 library(compmus)
+library(ggpubr)
+
 
 corpus <- get_playlist_audio_features("", "14Bfxipb26yzTFoxmDfjeg?si=ff7f24e465794647")
+```
+
+
+### How are valence, energy, loudness, and acousticness related?
+
+```{r}
+#  (from "https://r-graphics.org/recipe-axes-time-rel")
+timeHMS_formatter <- function(x) {
+  h <- floor(x/3600)
+  m <- floor((x/60) %% 60)
+  s <- round(x %% 60)                       # Round to nearest second
+  lab <- sprintf("%02d:%02d:%02d", h, m, s) # Format the strings as HH:MM:SS
+  lab <- sub("^00:", "", lab)               # Remove leading 00: if present
+  lab <- sub("^0", "", lab)                 # Remove leading 0 if present
+  return(lab)
+}
+
+lom <-
+  get_tidy_audio_analysis("3IgIofvAq4XuMgIiSTZZQs") %>% # Change URI.
+  compmus_align(sections, segments) %>%                     # Change `bars`
+  select(sections) %>%                                      #   in all three
+  unnest(sections) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "mean", norm = "manhattan"              # Change summary & norm.
+      ),
+  )
+
+lom_chroma <- lom %>% compmus_self_similarity(pitches, "manhattan")
+lom_timbre <- lom %>% compmus_self_similarity(timbre, "manhattan")
+
+
+chroma_plot <- ggplot(lom_chroma,
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "", title="Chroma") +
+  scale_x_continuous(
+    name = "Time",
+    breaks = seq(0, 1000, by = 15),
+    labels = timeHMS_formatter
+  ) +
+  scale_y_continuous(
+    name = "Time",
+    breaks = seq(0, 1000, by = 15),
+    labels = timeHMS_formatter
+  )
+
+timbre_plot <- ggplot(lom_timbre,
+  aes(
+    x = xstart + xduration / 2,
+    width = xduration,
+    y = ystart + yduration / 2,
+    height = yduration,
+    fill = d
+  )
+) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "", title="Timbre") +
+  scale_x_continuous(
+    name = "Time",
+    breaks = seq(0, 1000, by = 30),
+    labels = timeHMS_formatter
+  ) +
+  scale_y_continuous(
+    name = "Time",
+    breaks = seq(0, 1000, by = 30),
+    labels = timeHMS_formatter
+  )
+
+
+bir <-
+  get_tidy_audio_analysis("4Cegr1EzzvG8D77lUIsfSK") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+          compmus_summarise, timbre,
+          method = "mean", norm = "manhattan"              # Change summary & norm.
+      ),
+  )
+
+bir_timbre <- bir %>% compmus_gather_timbre()
+
+cepstro_plot <- ggplot(bir_timbre,
+  aes(
+    x = start + duration / 2,
+    width = duration,
+    y = basis,
+    fill = value
+  )
+) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude", title="\"Bir Olasılık\" Cepstrogram") +
+  scale_fill_viridis_c() +                              
+  theme_classic() +
+  scale_x_continuous(
+    name = "Time",
+    breaks = seq(0, 1000, by = 10),
+    labels = timeHMS_formatter
+  )
+
+figure <- ggarrange(
+  cepstro_plot, 
+  ggarrange(chroma_plot, timbre_plot, ncol = 2),
+  nrow = 2,
+  labels = NULL
+)
+figure
+
 ```
 
 ### Introduction
