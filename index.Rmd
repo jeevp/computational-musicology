@@ -23,13 +23,13 @@ corpus <- get_playlist_audio_features("", "14Bfxipb26yzTFoxmDfjeg?si=ff7f24e4657
 ```
 
 
-### How are valence, energy, loudness, and acousticness related?
+### How do chroma and timbre change during a song?
 
 ```{r}
 #  (from "https://r-graphics.org/recipe-axes-time-rel")
 timeHMS_formatter <- function(x) {
-  h <- floor(x/3600)
-  m <- floor((x/60) %% 60)
+  h <- floor(x / 3600)
+  m <- floor((x / 60) %% 60)
   s <- round(x %% 60)                       # Round to nearest second
   lab <- sprintf("%02d:%02d:%02d", h, m, s) # Format the strings as HH:MM:SS
   lab <- sub("^00:", "", lab)               # Remove leading 00: if present
@@ -161,6 +161,11 @@ figure <- ggarrange(
 figure
 
 ```
+
+***
+The top plot is a cepstrogram that visualises the timbre of "Bir Olasılık," an instrumental track by Erkin Koray. Since drums are the only instrument in this track, I thought it would be interesting to analyze how timbre changes thruoghout the song. As the plot shows, timbre stays relatively consistent in the C2, C3, and C6 rows, although there are parts in which certain timbres fade into the background or suddenly appear. One notable moment is around the 1:25 minute mark, where there is a bright yellow (high magnitude) section in the C2 row. This correspondes with a drum break that heavily features the cymbal, meaning the C2 timbre might correspond with cymbals or other drum components with similar timbre.
+
+The bottom two plots represent chroma-based and timbre-based self-similarity matrices for the song "Lies of Mercy" by the Durutti Column. This song features a repetitive guitar riff that weaves in and out of the song. This track also has several distinct "sections" that correspond with chord changes. The timbre plot shows large chunks of similarity, since most of the song uses the same guitar and vocals. However, we can clearly see changes in the chroma plot for each of the sections. For example, the 40-second mark represents the change from the first verse to the chorus, and we see this change represented on the plot. There are also chunks of similarity (like the motif from 0:55 to 1:15, which repeats again at 2:05).
 
 ### Introduction
 
