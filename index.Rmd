@@ -77,12 +77,12 @@ chroma_plot <- ggplot(lom_chroma,
   labs(x = "", y = "", title="Chroma") +
   scale_x_continuous(
     name = "Time",
-    breaks = seq(0, 1000, by = 15),
+    breaks = seq(0, 1000, by = 30),
     labels = timeHMS_formatter
   ) +
   scale_y_continuous(
     name = "Time",
-    breaks = seq(0, 1000, by = 15),
+    breaks = seq(0, 1000, by = 30),
     labels = timeHMS_formatter
   )
 
