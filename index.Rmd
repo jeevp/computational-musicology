@@ -17,7 +17,10 @@ library(ggthemes)
 library(plotly)
 library(compmus)
 library(ggpubr)
-
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
+library(recipes)
 
 corpus <- get_playlist_audio_features("", "14Bfxipb26yzTFoxmDfjeg?si=ff7f24e465794647")
 
@@ -109,6 +112,90 @@ key_templates <-
   )
 
 ```
+
+### Can clustering reveal patterns in my lockdown listening preferences?
+
+```{r}
+
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit %>% 
+    collect_predictions() %>% 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit %>% 
+    conf_mat_resampled() %>% 
+    group_by(Prediction) %>% mutate(precision = Freq / sum(Freq)) %>% 
+    group_by(Truth) %>% mutate(recall = Freq / sum(Freq)) %>% 
+    ungroup() %>% filter(Prediction == Truth) %>% 
+    select(class = Prediction, precision, recall)
+}
+
+may2020 <-
+  get_playlist_audio_features("Jeev", "5PgZ3RvjLDoLcWjrnqVsN6") %>%
+  add_audio_analysis() %>%
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) %>%
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+  unnest(cols = c(pitches, timbre))
+
+may2020_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration,
+    data = may2020
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors()) %>% 
+  # step_range(all_predictors()) %>% 
+  prep(may2020 %>% mutate(track.name = str_trunc(track.name, 20))) %>%
+  juice() %>%
+  column_to_rownames("track.name")
+
+may2020_dist <- dist(may2020_juice, method = "euclidean")
+
+may2020_dist %>% 
+  hclust(method = "single") %>% # Try single, average, and complete.
+  dendro_data() %>%
+  ggdendrogram()
+
+heatmaply(
+  may2020_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  # Change for single, average, or complete linkage.
+  dist_method = "euclidean"
+)
+
+```
+
+***
+
+This plot is a dendrogram of tracks from May 2020 of my corpus. Since these 11 tracks were added to my corpus during one of the most restrictive periods of COVID-19 lockdown, I wanted to see if there are any patterns in my listening history that reflect the slower pace of life while staying at home. This dendrogram uses Euclidean distance and single linkage to show hierarchical clusters of tracks using various Spotify features. Certain features (like duration and tempo) are too general to reflect meaningful patterns in my listening preferences. However, focusing on individual tracks reveals how these features influence clustering. For example, “Ashes to Ashes” and “Castles in the Grave” are high in tempo and low in acousticness, while “Snow” and “Planet Caravan” are slower, more low-key tracks that share similar valence, energy, and danceability.
+
 
 
 ### Has Julian Casablancas' music become more complex over time?
