@@ -113,90 +113,20 @@ key_templates <-
 
 ```
 
-### Can clustering reveal patterns in my lockdown listening preferences?
+### Introduction
 
-```{r}
+A few years ago, I decided to create a new Spotify playlist each month in order to capture my favorite music at various points in time. To keep each playlist consistent, I gave myself the following three conditions:
+1. the playlist would contain exactly 11 songs
+2. no two songs in the playlist could have the same artist
+3. every song in the playlist had to be a song I had listened to during the given calendar month
 
-get_conf_mat <- function(fit) {
-  outcome <- .get_tune_outcome_names(fit)
-  fit %>% 
-    collect_predictions() %>% 
-    conf_mat(truth = outcome, estimate = .pred_class)
-}  
+Between March 2018 and January 2022, I ended up creating 41 monthly playlists, which I have now combined into a single 451-song playlist.
 
-get_pr <- function(fit) {
-  fit %>% 
-    conf_mat_resampled() %>% 
-    group_by(Prediction) %>% mutate(precision = Freq / sum(Freq)) %>% 
-    group_by(Truth) %>% mutate(recall = Freq / sum(Freq)) %>% 
-    ungroup() %>% filter(Prediction == Truth) %>% 
-    select(class = Prediction, precision, recall)
-}
+**I think this playlist could serve as a corpus for my portfolio project because it represents the diversity of my music preferences, reflects month-by-month changes in how I listen to music, and reveals long-term trends for how my taste in music may have changed over a period of four years.**
 
-may2020 <-
-  get_playlist_audio_features("Jeev", "5PgZ3RvjLDoLcWjrnqVsN6") %>%
-  add_audio_analysis() %>%
-  mutate(
-    segments = map2(segments, key, compmus_c_transpose),
-    pitches =
-      map(segments,
-          compmus_summarise, pitches,
-          method = "mean", norm = "manhattan"
-      ),
-    timbre =
-      map(
-        segments,
-        compmus_summarise, timbre,
-        method = "mean"
-      )
-  ) %>%
-  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
-  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
-  unnest(cols = c(pitches, timbre))
+I think the variable of time can be used to create and compare groups of songs. For example, I can compare the valence of songs I added before the COVID-19 pandemic to those I added during lockdown. I can also investigate how different seasons might affect my listening history -- do I listen to more upbeat music in warmer months, or during the winter in an attempt to boost my mood? How has my appreciation for certain artists and genres changed month-by-month and year-by-year?
 
-may2020_juice <-
-  recipe(
-    track.name ~
-      danceability +
-      energy +
-      loudness +
-      speechiness +
-      acousticness +
-      instrumentalness +
-      liveness +
-      valence +
-      tempo +
-      duration,
-    data = may2020
-  ) %>%
-  step_center(all_predictors()) %>%
-  step_scale(all_predictors()) %>% 
-  # step_range(all_predictors()) %>% 
-  prep(may2020 %>% mutate(track.name = str_trunc(track.name, 20))) %>%
-  juice() %>%
-  column_to_rownames("track.name")
-
-may2020_dist <- dist(may2020_juice, method = "euclidean")
-
-may2020_dist %>% 
-  hclust(method = "single") %>% # Try single, average, and complete.
-  dendro_data() %>%
-  ggdendrogram()
-
-heatmaply(
-  may2020_juice,
-  hclustfun = hclust,
-  hclust_method = "average",  # Change for single, average, or complete linkage.
-  dist_method = "euclidean"
-)
-
-```
-
-***
-
-This plot is a dendrogram of tracks from May 2020 of my corpus. Since these 11 tracks were added to my corpus during one of the most restrictive periods of COVID-19 lockdown, I wanted to see if there are any patterns in my listening history that reflect the slower pace of life while staying at home. This dendrogram uses Euclidean distance and single linkage to show hierarchical clusters of tracks using various Spotify features. Certain features (like duration and tempo) are too general to reflect meaningful patterns in my listening preferences. However, focusing on individual tracks reveals how these features influence clustering. For example, “Ashes to Ashes” and “Castles in the Grave” are high in tempo and low in acousticness, while “Snow” and “Planet Caravan” are slower, more low-key tracks that share similar valence, energy, and danceability.
-
-
+Since I almost exclusively listen to music on Spotify, I believe this corpus is highly representative of my personal listening habits. I also think the variation in songs will allow me to analyze certain tracks in greater detail. Songs like "2021" by A.G. Cook (a short, digitally-produced electronic track) will contrast greatly with "Obi Agye Me Dofo" by Vis à Vis (a 10-minute Afrobeat track recorded live in the 1970s). These songs fall on different sides of the spectrum in terms of length, genre, and "acousticness," making them good candidates for investigation.
 
 ### Has Julian Casablancas' music become more complex over time?
 ```{r}
@@ -416,22 +346,6 @@ The top plot is a cepstrogram that visualises the timbre of "Bir Olasılık," an
 
 The bottom two plots represent chroma-based and timbre-based self-similarity matrices for the song "Lies of Mercy" by the Durutti Column. This song features a repetitive guitar riff that weaves in and out of the song. This track also has several distinct "sections" that correspond with chord changes. The timbre plot shows large chunks of similarity, since most of the song uses the same guitar and vocals. However, we can clearly see changes in the chroma plot for each of the sections. For example, the 40-second mark represents the change from the first verse to the chorus, and we see this change represented on the plot. There are also chunks of similarity (like the motif from 0:55 to 1:15, which repeats again at 2:05).
 
-### Introduction
-
-A few years ago, I decided to create a new Spotify playlist each month in order to capture my favorite music at various points in time. To keep each playlist consistent, I gave myself the following three conditions:
-1. the playlist would contain exactly 11 songs
-2. no two songs in the playlist could have the same artist
-3. every song in the playlist had to be a song I had listened to during the given calendar month
-
-Between March 2018 and January 2022, I ended up creating 41 monthly playlists, which I have now combined into a single 451-song playlist.
-
-**I think this playlist could serve as a corpus for my portfolio project because it represents the diversity of my music preferences, reflects month-by-month changes in how I listen to music, and reveals long-term trends for how my taste in music may have changed over a period of four years.**
-
-I think the variable of time can be used to create and compare groups of songs. For example, I can compare the valence of songs I added before the COVID-19 pandemic to those I added during lockdown. I can also investigate how different seasons might affect my listening history -- do I listen to more upbeat music in warmer months, or during the winter in an attempt to boost my mood? How has my appreciation for certain artists and genres changed month-by-month and year-by-year?
-
-Since I almost exclusively listen to music on Spotify, I believe this corpus is highly representative of my personal listening habits. I also think the variation in songs will allow me to analyze certain tracks in greater detail. Songs like "2021" by A.G. Cook (a short, digitally-produced electronic track) will contrast greatly with "Obi Agye Me Dofo" by Vis à Vis (a 10-minute Afrobeat track recorded live in the 1970s). These songs fall on different sides of the spectrum in terms of length, genre, and "acousticness," making them good candidates for investigation.
-
-
 ### How are valence, energy, loudness, and acousticness related?
 
 ```{r}
@@ -532,4 +446,164 @@ compmus_long_distance(
 *** 
 
 This plot represents a dynamic time warping between two versions of the famous French chanson "Hier encore." The original version was released in 1964 by Charles Azvanour. Five years later, the American country singer Roy Clark recorded an English version of the song, titled "Yesterday When I Was Young." Since these songs have different lyrics (sung in different languages) and employ different instrumentation, I wanted to investigate how musically similar the two songs really are. This plot shows the chroma features of each song, and similarity is shown by the several faint diagonal lines throughout the song. Although it is clear that the songs are not exactly the same (which would be shown by much clearer diagonal lines that have a slope of 1), we can see some similarities where chords are most likely aligning. Conversely, the parts of the plot where the lines become fragmented or broken probably represent parts of the songs where the chords does not align.
+
+## What makes a live performance unique? {#p-tempo}
+
+As I looked through my corpus, I noticed that although most of my playlists' tracks are studio recordings, I also included a few live versions of my favorite songs. To look for patterns in why I might prefer one over the other, I decided to investigate how musical features might differ between studio and live recordings of the same song. After creating visual representations to compare songs, I found that live versions of songs seem to fall into one of two categories. First, some artists choose to imitate a studio recording when performing live, creating a track that sounds very similar (but perhaps slightly different in timbre) to the original. I think this pattern is clearly shown by examining differences in tempo. For example, the tempograms below show side by side comparisons between the studio recording (on the left) and live recording (on the right) of "Foam" by indie rock band Diviño Nino.
+
+<div class="row">
+  <div>
+    <iframe style="border-radius:12px; margin: auto; display: block;" src="https://open.spotify.com/embed/track/1MboJPXUvoSN18XB2nDoBr?utm_source=generator"  height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    <figure>
+      ```{r, echo=FALSE}
+      foam_studio <- get_tidy_audio_analysis("1MboJPXUvoSN18XB2nDoBr")
+      foam_studio %>%
+        tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+        ggplot(aes(x = time, y = bpm, fill = power)) +
+        geom_raster() +
+        scale_fill_viridis_c(guide = "none") +
+        labs(x = "Time (s)", y = "Tempo (BPM)") +
+        theme_classic()
+      ```
+    </figure>
+  </div>
+
+  <div>
+    <iframe style="border-radius:12px; margin: auto; display: block;" src="https://open.spotify.com/embed/track/6rY2KHewC0OF3F22oGZser?utm_source=generator"  height="80" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    <figure>
+    ```{r, echo=FALSE}
+    foam_live <- get_tidy_audio_analysis("6rY2KHewC0OF3F22oGZser")
+    foam_live %>%
+      tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+      ggplot(aes(x = time, y = bpm, fill = power)) +
+      geom_raster() +
+      scale_fill_viridis_c(guide = "none") +
+      labs(x = "Time (s)", y = "Tempo (BPM)") +
+      theme_classic()
+    ```
+    </figure>
+  </div>
+</div>
+
+***
+
+By listening to the songs and examining the tempograms, one can tell that the differences in tempo between both songs are minimal, with only slight fluctuation from 100 BPM. In contrast, some artists intend for their live performances to complement studio recordings by providing a completely different take on the original version. For example, Arctic Monkeys have totally transformed their sound since their debut album, shifting from energetic, punk-inspired rock to slow, jazz-influenced ballads. In 2018, they performed some of their older songs with their newer musical style. Below are two plots comparing the 2006 studio recording of "I Bet You Look Good On The Dancefloor" (on the left) with the 2018 live version (on the right).
+
+<div class="row">
+  <div>
+    <iframe style="border-radius:12px; margin: auto; display: block;" src="https://open.spotify.com/embed/track/29EkMZmUNz1WsuzaMtVo1i?utm_source=generator" width="100%" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    <figure>
+    ```{r, echo=FALSE}
+    dancefloor_studio <- get_tidy_audio_analysis("29EkMZmUNz1WsuzaMtVo1i")
+    dancefloor_studio %>%
+      tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+      ggplot(aes(x = time, y = bpm, fill = power)) +
+      geom_raster() +
+      scale_fill_viridis_c(guide = "none") +
+      labs(x = "Time (s)", y = "Tempo (BPM)") +
+      theme_classic()
+    ```
+    </figure>
+  </div>
+
+  <div>
+    <iframe style="border-radius:12px; margin: auto; display: block;" src="https://open.spotify.com/embed/track/4YS0QKXLqqSM3MxlWej009?utm_source=generator" width="100%" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    <figure>
+    ```{r, echo=FALSE}
+    dancefloor_live <- get_tidy_audio_analysis("4YS0QKXLqqSM3MxlWej009")
+    dancefloor_live %>%
+      tempogram(window_size = 8, hop_size = 1, cyclic = TRUE) %>%
+      ggplot(aes(x = time, y = bpm, fill = power)) +
+      geom_raster() +
+      scale_fill_viridis_c(guide = "none") +
+      labs(x = "Time (s)", y = "Tempo (BPM)") +
+      theme_classic()
+    ```
+    </figure>
+  </div>
+</div>
+
+
+### Can clustering reveal patterns in my lockdown listening preferences?
+
+```{r}
+
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit %>% 
+    collect_predictions() %>% 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit %>% 
+    conf_mat_resampled() %>% 
+    group_by(Prediction) %>% mutate(precision = Freq / sum(Freq)) %>% 
+    group_by(Truth) %>% mutate(recall = Freq / sum(Freq)) %>% 
+    ungroup() %>% filter(Prediction == Truth) %>% 
+    select(class = Prediction, precision, recall)
+}
+
+may2020 <-
+  get_playlist_audio_features("Jeev", "5PgZ3RvjLDoLcWjrnqVsN6") %>%
+  add_audio_analysis() %>%
+  mutate(
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(segments,
+          compmus_summarise, pitches,
+          method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean"
+      )
+  ) %>%
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+  unnest(cols = c(pitches, timbre))
+
+may2020_juice <-
+  recipe(
+    track.name ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration,
+    data = may2020
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors()) %>% 
+  # step_range(all_predictors()) %>% 
+  prep(may2020 %>% mutate(track.name = str_trunc(track.name, 20))) %>%
+  juice() %>%
+  column_to_rownames("track.name")
+
+may2020_dist <- dist(may2020_juice, method = "euclidean")
+
+may2020_dist %>% 
+  hclust(method = "single") %>% # Try single, average, and complete.
+  dendro_data() %>%
+  ggdendrogram()
+
+heatmaply(
+  may2020_juice,
+  hclustfun = hclust,
+  hclust_method = "average",  # Change for single, average, or complete linkage.
+  dist_method = "euclidean"
+)
+
+```
+
+***
+
+This plot is a dendrogram of tracks from May 2020 of my corpus. Since these 11 tracks were added to my corpus during one of the most restrictive periods of COVID-19 lockdown, I wanted to see if there are any patterns in my listening history that reflect the slower pace of life while staying at home. This dendrogram uses Euclidean distance and single linkage to show hierarchical clusters of tracks using various Spotify features. Certain features (like duration and tempo) are too general to reflect meaningful patterns in my listening preferences. However, focusing on individual tracks reveals how these features influence clustering. For example, “Ashes to Ashes” and “Castles in the Grave” are high in tempo and low in acousticness, while “Snow” and “Planet Caravan” are slower, more low-key tracks that share similar valence, energy, and danceability.
 
