@@ -1,0 +1,46 @@
+```{r test}
+font <- list(
+  family = "Inter",
+  size = 12,
+  color = "white"
+)
+label <- list(
+  bgcolor = "#232F34",
+  bordercolor = "transparent",
+  font = font
+)
+
+p <- ggplot(
+  corpus,
+  aes(
+    x = energy,
+    y = valence,
+    alpha = loudness,
+    size = acousticness,
+    name = track.name,
+    text = paste(
+      "Track: ", track.name,
+      "<br>Valence: ", valence,
+      "<br>Energy: ", energy,
+      "<br>Loudness: ", loudness,
+      "<br>Acousticness: ", acousticness
+    ))
+  ) +
+  geom_point(color = "#15a353") +
+  scale_size(trans = "reverse") +
+  labs(
+    title = "Valence, energy, loudness, and acousticness by track",
+    x = "Track energy",
+    y = "Track valence",
+    size = "Track acousticness",
+    alpha = "Track loudness"
+  ) +
+  theme_few()
+
+
+fig <- ggplotly(p, tooltip = "text") %>%
+  style(hoverlabel = label) %>%
+  layout(font = font)
+
+fig
+```
